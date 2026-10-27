@@ -15,7 +15,7 @@
 
 * **Live Application (Frontend):** [https://ticket-flow-livid.vercel.app](https://ticket-flow-livid.vercel.app)
 * **Backend API & Healthcheck:** [https://ticketflow-vd8x.onrender.com/api/health](https://ticketflow-vd8x.onrender.com/api/health)
-* **Demo Video (3–5 mins):** [Watch Live System Walkthrough](https://youtu.be/placeholder-demo-video)
+* **Demo Video (3–5 mins):** [Watch Live System Walkthrough](https://drive.google.com/file/d/1_gQVzeQYEMCA44ptUHlMEtRS97_5v9pm/view?usp=sharing)
 
 ### 🔑 Evaluator Test Credentials (RBAC Quick Test)
 Pre-seeded credentials are provided below so evaluators can test role-based authentication and workflows immediately without registering:
