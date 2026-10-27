@@ -23,14 +23,24 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'http://127.0.0.1:5173',
-  ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map((u) => u.trim()) : []),
+  'https://ticket-flow-livid.vercel.app',
+  ...(process.env.CLIENT_URL
+    ? process.env.CLIENT_URL.split(',').map((u) => u.trim().replace(/\/$/, ''))
+    : []),
 ];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (mobile, curl, webhooks) or allowed origins
-      if (!origin || allowedOrigins.includes(origin) || origin.includes('localhost')) {
+      // Allow requests with no origin (mobile apps, curl, webhooks)
+      if (!origin) return callback(null, true);
+
+      const cleanOrigin = origin.replace(/\/$/, '');
+      if (
+        allowedOrigins.includes(cleanOrigin) ||
+        cleanOrigin.includes('localhost') ||
+        cleanOrigin.endsWith('.vercel.app')
+      ) {
         return callback(null, true);
       }
       return callback(new Error(`CORS policy violation: Origin '${origin}' is not authorized`));
