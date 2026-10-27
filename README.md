@@ -11,6 +11,22 @@
 
 ---
 
+## 🔗 Live Deployment, Demo & Evaluator Credentials
+
+* **Live Application (Frontend):** [https://ticket-flow-livid.vercel.app](https://ticket-flow-livid.vercel.app)
+* **Backend API & Healthcheck:** [https://ticketflow-vd8x.onrender.com/api/health](https://ticketflow-vd8x.onrender.com/api/health)
+* **Demo Video (3–5 mins):** [Watch Live System Walkthrough](https://youtu.be/placeholder-demo-video)
+
+### 🔑 Evaluator Test Credentials (RBAC Quick Test)
+Pre-seeded credentials are provided below so evaluators can test role-based authentication and workflows immediately without registering:
+
+| Role | Email | Password | Allowed Workflows & Permissions |
+| :--- | :--- | :--- | :--- |
+| **Organizer** | `organizer@test.com` | `password123` | Create events, set ticket capacities & pricing, monitor live sales & capacity metrics in the Organizer Dashboard |
+| **Attendee** | `attendee@test.com` | `password123` | Search events, reserve time-locked seats, complete Razorpay checkout, view ticket wallet & QR passes |
+
+---
+
 ## 📌 Executive Summary & Architecture
 
 During high-demand flash sales (e.g., concert tours, sports championships), thousands of concurrent users attempt to purchase tickets within milliseconds. Naive database architectures suffer from **race conditions**, **double bookings**, **phantom inventory loss**, and **inconsistent payment states**.
@@ -20,6 +36,24 @@ During high-demand flash sales (e.g., concert tours, sports championships), thou
 2. **MongoDB ACID Multi-Document Transactions** to guarantee atomic order fulfillment.
 3. **Cryptographically verified, idempotent webhooks** for asynchronous Razorpay settlement.
 4. **Deterministic background inventory sweeper** to reclaim abandoned reservations without inventory leakage.
+
+### 👥 Target Users & Core Workflows
+
+* **Target User Groups:**
+  1. **Event Organizers:** Event managers, promoters, and hosts who publish experiences and monitor ticketing analytics.
+  2. **Attendees:** Event-goers and fans purchasing high-demand tickets in competitive flash sale conditions.
+
+* **Core User Workflows & Features:**
+  * **For Organizers:**
+    * **Create & Publish Events:** Set event title, detailed description, future date/time, ticket pricing, and total venue capacity.
+    * **Real-time Inventory Tracking:** View live capacity bars, available ticket counts, and total revenue generated per event.
+    * **Role-Protected Organizer Dashboard:** Dedicated route (`/dashboard`) guarded by JWT role verification (`role: 'Organizer'`).
+  * **For Attendees:**
+    * **Discovery & Search:** Real-time search by title, location, or keywords with responsive glassmorphism event cards.
+    * **Dedicated Event Details Page:** Rich event overview with interactive multi-ticket stepper (`-` / `+`), dynamic subtotal calculations, and capacity counters.
+    * **Atomic Seat Locking (10-minute hold):** Locks tickets immediately to guarantee availability during payment processing without overselling.
+    * **Seamless Razorpay Checkout:** Encrypted modal checkout supporting test cards, UPI, net banking, and instant webhooks.
+    * **Attendee Ticket Wallet (`/tickets`):** View issued digital passes with QR verification and monitor temporary pending holds with live countdown timers.
 
 ```
                               ┌───────────────────────────────────────────────┐
@@ -92,6 +126,7 @@ During high-demand flash sales (e.g., concert tours, sports championships), thou
         {
           eventId: reservation.eventId,
           userId: reservation.userId,
+          quantity: reservation.quantity || 1,
           razorpayOrderId,
           paymentStatus: 'Paid'
         }
@@ -142,12 +177,13 @@ During high-demand flash sales (e.g., concert tours, sports championships), thou
 ```
 ├── server/
 │   ├── config/              # MongoDB connection & pool settings
-│   ├── controllers/         # Auth, Event, Ticket, Payment, and User controllers
+│   ├── controllers/         # Auth, Event, Ticket, Payment, and Admin controllers
 │   ├── middlewares/         # JWT verification, Role-based guards, Centralized error handler
 │   ├── models/              # User, Event, Reservation, Ticket Mongoose schemas
 │   ├── routes/              # Express REST API routes
 │   ├── utils/               # Async error wrappers & helper methods
 │   ├── workers/             # inventoryWorker.js (Active background reservation sweeper)
+│   ├── seed.js              # Database seed script (evaluator accounts & demo events)
 │   ├── server.js            # Server entry point with CORS & webhook rawBody buffer
 │   ├── Procfile             # Deployment command for long-running PaaS
 │   └── .env.example         # Production & development environment template
@@ -158,10 +194,11 @@ During high-demand flash sales (e.g., concert tours, sports championships), thou
 │   │   ├── context/         # AuthContext.jsx (Global session state & profile fetch)
 │   │   ├── hooks/           # useCheckout.js (Multi-step atomic Razorpay pipeline hook)
 │   │   ├── components/      # Navbar, ProtectedRoute (RBAC), Checkout trigger
-│   │   ├── pages/           # Home, MyTickets (Wallet), OrganizerDashboard, Login, Register
+│   │   ├── pages/           # Home, EventDetails, MyTickets (Wallet), OrganizerDashboard, Login, Register
 │   │   ├── index.css        # Tailwind CSS design system tokens & glassmorphism utilities
 │   │   └── App.jsx          # Declarative React Router setup with role guards
 │   ├── vercel.json          # SPA routing configuration for Vercel
+│   ├── vite.config.js       # Vite bundler & proxy configuration
 │   └── package.json
 │
 ├── tests/
@@ -204,8 +241,8 @@ During high-demand flash sales (e.g., concert tours, sports championships), thou
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/your-username/ticketflow.git
-cd ticketflow
+git clone https://github.com/SujalGop/TicketFlow.git
+cd TicketFlow
 ```
 
 ### 2. Configure & Run Backend Server
@@ -215,6 +252,9 @@ npm install
 
 # Copy environment variables and configure them
 cp .env.example .env
+
+# Seed database with initial evaluator accounts and demo events
+node seed.js
 
 # Run in development mode with nodemon
 npm run dev
@@ -226,9 +266,6 @@ In a separate terminal window:
 ```bash
 cd ticketflow-client
 npm install
-
-# Copy frontend environment template
-cp .env.example .env
 
 # Start Vite development server
 npm run dev
@@ -254,7 +291,7 @@ All protected endpoints require the header:
 * `POST /api/events` — Create new event (`title`, `description`, `date`, `price`, `totalCapacity`) *(Organizer only)*
 
 ### Tickets & Reservation Pipeline
-* `POST /api/tickets/reserve` — Atomic inventory decrement with 10-minute hold (`eventId`) *(Protected)*
+* `POST /api/tickets/reserve` — Atomic inventory decrement with 10-minute hold (`eventId`, `quantity`) *(Protected)*
 * `POST /api/payments/create-order` — Create Razorpay order from reservation (`reservationId`) *(Protected)*
 * `POST /api/webhooks/razorpay` — Asynchronous webhook handler for payment settlement *(Signature Verified)*
 * `GET /api/users/tickets` — View all confirmed tickets for logged-in user *(Protected)*
@@ -269,20 +306,20 @@ All protected endpoints require the header:
 2. Set **Root Directory** to `ticketflow-client`.
 3. Set **Framework Preset** to `Vite`.
 4. Configure Environment Variable:
-   * `VITE_API_URL` = `https://your-backend-service.onrender.com/api`
+   * `VITE_API_URL` = `https://ticketflow-vd8x.onrender.com/api`
 5. Deploy. The included `vercel.json` ensures that direct links and route reloads resolve correctly through `index.html`.
 
 ### Backend Deployment (Render / Railway / Fly.io)
 > ⚠️ **Important:** Do not deploy the backend to serverless platforms (e.g., Vercel Functions, AWS Lambda). The background reservation sweeper (`node-cron`) requires an active, long-running persistent Node.js process.
 
-1. Connect repository to [Render](https://render.com) or [Railway](https://railway.app).
+1. Connect repository to [Render](https://render.com).
 2. Use **Root Directory** `server`.
 3. Build Command: `npm install`
 4. Start Command: `node server.js`
-5. Add all required production environment variables from `.env.example`.
+5. Add all required production environment variables (`MONGO_URI`, `JWT_SECRET`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `CLIENT_URL`).
 6. Configure the Razorpay Webhook on Razorpay Dashboard:
-   * **Webhook URL:** `https://your-backend.onrender.com/api/webhooks/razorpay`
-   * **Active Events:** `payment.captured`
+   * **Webhook URL:** `https://ticketflow-vd8x.onrender.com/api/webhooks/razorpay`
+   * **Active Events:** `payment.captured`, `order.paid`
    * **Secret:** Matches `RAZORPAY_WEBHOOK_SECRET`
 
 ---
