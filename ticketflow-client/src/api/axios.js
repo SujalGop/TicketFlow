@@ -9,8 +9,13 @@
 
 import axios from 'axios';
 
+let apiBase = (import.meta.env.VITE_API_URL || '/api').trim().replace(/\/$/, '');
+if (apiBase.startsWith('http') && !apiBase.endsWith('/api')) {
+  apiBase = `${apiBase}/api`;
+}
+
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: apiBase,
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',

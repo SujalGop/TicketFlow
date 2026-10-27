@@ -62,14 +62,32 @@ app.use(
 app.use(express.urlencoded({ extended: true }));
 
 // ---------------------------------------------------------------------------
-// API Routes
+// API Routes (Mounted under /api and root paths for resilient routing)
 // ---------------------------------------------------------------------------
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/events', require('./routes/eventRoutes'));
-app.use('/api/tickets', require('./routes/ticketRoutes'));
-app.use('/api/payments', require('./routes/paymentRoutes'));
-app.use('/api/users', require('./routes/userRoutes'));
-app.use('/api/admin', require('./routes/adminRoutes'));
+const authRoutes = require('./routes/authRoutes');
+const eventRoutes = require('./routes/eventRoutes');
+const ticketRoutes = require('./routes/ticketRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const userRoutes = require('./routes/userRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+
+app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
+
+app.use('/api/events', eventRoutes);
+app.use('/events', eventRoutes);
+
+app.use('/api/tickets', ticketRoutes);
+app.use('/tickets', ticketRoutes);
+
+app.use('/api/payments', paymentRoutes);
+app.use('/payments', paymentRoutes);
+
+app.use('/api/users', userRoutes);
+app.use('/users', userRoutes);
+
+app.use('/api/admin', adminRoutes);
+app.use('/admin', adminRoutes);
 
 // Dedicated Razorpay Webhook Endpoint (Public, signature-verified)
 app.post(
